@@ -978,7 +978,7 @@ MonoBehaviour:
   scoreText: {fileID: 1001864149}
   comboText: {fileID: 332869388}
   timerText: {fileID: 1571745936}
-  timer: 5
+  timer: 30
   resultPanel: {fileID: 10806467}
   scoreText2: {fileID: 1034555267}
 --- !u!4 &1275137348
