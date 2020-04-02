@@ -174,10 +174,12 @@ public class Tile : MonoBehaviour
                 otherTile.GetComponent<Tile>().column = column;
                 row = previousRow;
                 column = previousColumn;
+                grid.ResetCombo();
             }
             else
             {
                 grid.DestroyMatches();
+                grid.AddCombo();
             }
         }
         otherTile = null;

@@ -12,9 +12,13 @@ public class Grid : MonoBehaviour
     public Vector2 startPosition;
     public Vector2 offset;
 
+    public GameManager gm;
+    public float comboMultiplier;
+
     void Start()
     {
         tiles = new GameObject[gridSizeX, gridSizeY];
+        comboMultiplier = 1.0f;
         CreateGrid();
     }
     void CreateGrid()
@@ -41,7 +45,7 @@ public class Grid : MonoBehaviour
                 }
                 MAX_ITERATION = 0;
 
-                GameObject candy = Instantiate(candies[index], pos, Quaternion.identity) ;
+                GameObject candy = ObjectPooler.Instance.SpawnFromPool(index.ToString(), pos, Quaternion.identity);
                 //candy.GetComponent<Tile>().Init();
                 candy.name = "(" + x + "," + y + ")";
                 //Debug.Log(tiles);
@@ -88,8 +92,10 @@ public class Grid : MonoBehaviour
 
         if (tiles[column, row].GetComponent<Tile>().isMatched)
         {
-            Destroy(tiles[column, row]);
+            GameObject temp = tiles[column, row];
+            temp.SetActive(false);
             tiles[column, row] = null;
+            gm.GetScore(Mathf.RoundToInt(10 * comboMultiplier));     
         }
     }
 
@@ -105,5 +111,91 @@ public class Grid : MonoBehaviour
                 }
             }
         }
+        StartCoroutine(DecreaseRow());
+    }
+
+    private void RefillBoard()
+    {
+        for (int x = 0; x < gridSizeX; x++)
+        {
+            for (int y = 0; y < gridSizeY; y++)
+            {
+                if (tiles[x, y] == null)
+                {
+                    Vector2 tempPosition = new Vector3(startPosition.x + (x * offset.x), startPosition.y + (y * offset.y));
+                    int candyToUse = Random.Range(0, candies.Length);
+                    GameObject tileToRefill = ObjectPooler.Instance.SpawnFromPool(candyToUse.ToString(), tempPosition, Quaternion.identity);
+                    //tileToRefill.GetComponent<Tile>().Init();
+                    tiles[x, y] = tileToRefill;
+                }
+            }
+        }
+    }
+
+
+    private bool MatchesOnBoard()
+    {
+        for (int i = 0; i < gridSizeX; i++)
+        {
+            for (int j = 0; j < gridSizeY; j++)
+            {
+                if (tiles[i, j] != null)
+                {
+                    if (tiles[i, j].GetComponent<Tile>().isMatched)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+
+    private IEnumerator DecreaseRow()
+    {
+        int nullCount = 0;
+        for (int i = 0; i < gridSizeX; i++)
+        {
+            for (int j = 0; j < gridSizeY; j++)
+            {
+                if (tiles[i, j] == null)
+                {
+                    nullCount++;
+                }
+                else if (nullCount > 0)
+                {
+                    tiles[i, j].GetComponent<Tile>().row -= nullCount;
+                    tiles[i, j] = null;
+                }
+            }
+            nullCount = 0;
+        }
+        yield return new WaitForSeconds(.4f);
+        StartCoroutine(FillBoard());
+    }
+
+
+    private IEnumerator FillBoard()
+    {
+        RefillBoard();
+        yield return new WaitForSeconds(.5f);
+        while (MatchesOnBoard())
+        {
+            yield return new WaitForSeconds(.5f);
+            DestroyMatches();
+        }
+    }
+
+    public void ResetCombo()
+    {
+        comboMultiplier = 1.0f;
+        gm.SetMultiplier(comboMultiplier);
+    }
+
+    public void AddCombo()
+    {
+        comboMultiplier += 0.1f;
+        gm.SetMultiplier(comboMultiplier);
     }
 }
